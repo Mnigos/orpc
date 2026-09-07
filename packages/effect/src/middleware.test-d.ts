@@ -105,6 +105,34 @@ describe('middlewareGen', () => {
     void procedure
   })
 
+  it('infers everything without type arguments when created via os.middleware', () => {
+    interface ServerContext extends WithEffectContext<Service1> {
+      auth: boolean
+    }
+
+    const requireAuth = os
+      .$context<ServerContext>()
+      .middleware(middlewareGen(function* ({ context, next }) {
+        expectTypeOf(context.auth).toEqualTypeOf<boolean>()
+        yield* Service1
+
+        return yield* next({ context: { user: 'user' as const } })
+      }))
+
+    const procedure = os
+      .$context<ServerContext>()
+      .input(z.object({ id: z.string() }))
+      .output(z.string())
+      .use(requireAuth)
+      .handler(({ context }) => {
+        expectTypeOf(context.user).toEqualTypeOf<'user'>()
+
+        return 'output'
+      })
+
+    void procedure
+  })
+
   it('supports standalone middleware on procedures with concrete input/output', () => {
     interface ServerContext extends WithEffectContext<Service1> {
       auth: boolean
