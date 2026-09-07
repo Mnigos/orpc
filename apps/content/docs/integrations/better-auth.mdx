@@ -46,7 +46,7 @@ const router = {
 
 Only a missing session becomes `UNAUTHORIZED`. Other errors from `getSession` propagate to oRPC's [error handling](/docs/error-handling).
 
-`reqHeaders` is `undefined` without the plugin, such as in [server-side calls](/docs/client/server-side). The empty fallback makes the session `null` there, since `getSession` rejects missing headers. Pass `reqHeaders` in the initial context to authenticate such calls.
+`reqHeaders` is `undefined` without the plugin, such as in [server-side calls](/docs/client/server-side). The empty `Headers` fallback carries no session cookie, so `getSession` returns `null` and protected calls return `UNAUTHORIZED`. Pass `reqHeaders` in the initial context to authenticate such calls.
 
 ## Lazily Load and Share the Session
 
@@ -106,3 +106,5 @@ export async function fetch(request: Request): Promise<Response> {
   return matched ? response : new Response('Not Found', { status: 404 })
 }
 ```
+
+Both examples may need to forward session cookies to the browser; see Better Auth's [response headers guidance](https://better-auth.com/docs/concepts/api#getting-headers).
