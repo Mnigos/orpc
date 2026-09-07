@@ -170,7 +170,7 @@ const procedure = os.handler(handlerGen(function* ({ errors }) {
   return 'Success'
 }))
 
-const [error, result] = await call(procedure)
+const [error, data] = await safe(call(procedure))
 
 if (isInferableError(error)) {
   // typesafe error handling
