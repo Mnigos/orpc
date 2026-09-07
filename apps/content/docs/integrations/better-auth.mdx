@@ -7,6 +7,10 @@ sidebar:
 
 Use your [Better Auth](https://better-auth.com/) instance with oRPC's [context](/docs/context) and [middleware](/docs/middleware). No extra package is needed.
 
+:::warning
+`getSession` may return response headers, such as a refreshed session cookie. The examples below do not forward them. If you do not use the [Batch Plugin](/docs/plugins/batch), the [Response Headers Plugin](/docs/plugins/response-headers) can forward them: call `getSession` with `returnHeaders: true` and append the returned [headers](https://better-auth.com/docs/concepts/api#getting-headers) to `context.resHeaders`. Batched sub-requests cannot set browser cookies.
+:::
+
 ## Resolve the Session in Middleware
 
 The [Request Headers Plugin](/docs/plugins/request-headers) exposes request headers as `context.reqHeaders`. The middleware loads the session from them and rejects unauthenticated calls. Public procedures use the base directly. Each protected call performs its own lookup, including every sub-request of a [batch](/docs/plugins/batch).
@@ -106,5 +110,3 @@ export async function fetch(request: Request): Promise<Response> {
   return matched ? response : new Response('Not Found', { status: 404 })
 }
 ```
-
-Both examples may need to forward session cookies to the browser; see Better Auth's [response headers guidance](https://better-auth.com/docs/concepts/api#getting-headers).
