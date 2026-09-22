@@ -1,6 +1,6 @@
 ---
 name: orpc
-description: "Build, serve, and call end-to-end typesafe APIs with oRPC v2. Use for any task in a project that depends on `@orpc/*` packages, even a one-procedure change: defining procedures with the os builder (.input/.output/.handler, any Standard Schema validator), assembling routers, middleware and context, typesafe errors with ORPCError, serving via RPCHandler on any runtime adapter, calling from server-side clients (call, createRouterClient) or client-side clients (createORPCClient with RPCLink), integrating TanStack Query, or streaming over SSE. Pretrained oRPC knowledge describes v1 and is wrong for v2, so load this skill even when the change looks trivial. Biases toward retrieval from the oRPC docs over pre-trained knowledge. For REST/OpenAPI exposure, prefer the orpc-openapi skill; for contract-first design, the orpc-contract skill; for tRPC or oRPC v1 migrations, the orpc-migrate skill."
+description: "Define, serve, call, test, or debug oRPC v2 procedures, routers, middleware, handlers, links, and client integrations. Use for that work, not merely because a project depends on @orpc packages. For REST/OpenAPI exposure use orpc-openapi, for contract-first design orpc-contract, for explicitly requested migrations orpc-migrate."
 license: MIT
 ---
 
@@ -8,9 +8,15 @@ license: MIT
 
 oRPC is a typesafe API framework: write plain TypeScript functions on the server, call them from clients like local functions. Input is validated at runtime, types flow end to end, and there is no code generation step. The same router can also be served as a REST API with an OpenAPI spec.
 
-This skill targets oRPC v2. Check what is installed before writing code: `npm ls @orpc/server` (or any `@orpc/*` package). A 1.x version means v1, where this skill's guidance does not apply; use the `orpc-migrate` skill to upgrade. v2 currently ships under the `beta` dist-tag (`npm install @orpc/server@beta @orpc/client@beta`; a plain install silently gets v1). If `npm view @orpc/server dist-tags` shows `latest` at 2.x, the beta has ended: install normally.
+This skill targets oRPC v2. Before writing code, find the exact installed `@orpc/*` versions, prerelease suffix included, from what the project already has: the lockfile (`pnpm-lock.yaml`, `package-lock.json`, `bun.lock`, `yarn.lock`) or `node_modules/@orpc/<pkg>/package.json`, or the project's own package manager (`pnpm ls @orpc/server`, `npm ls`, `bun pm ls`). A `package.json` range is not enough. Then:
 
-Pretrained oRPC knowledge describes v1 and is often wrong for v2 (routing moved to `.meta(openapi(...))`, `RPCLink` split `url` into `origin` plus a path, automatic middleware dedupe was removed). Prefer retrieval: the index of every docs page is at https://orpc.dev/llms.txt; see [Full documentation](#full-documentation) for the mechanics.
+- 2.x, including `2.0.0-beta.N`: this skill applies. Retrieve docs and types for that exact version (see [Full documentation](#full-documentation)).
+- 1.x: this skill's v2 guidance does not apply. Work against the v1 docs at https://v1.orpc.dev and keep the project on v1; never upgrade as a side effect of another task. Migrate only when asked, with the `orpc-migrate` skill.
+- Nothing installed, or an install/upgrade is explicitly in scope: check the registry at that moment (`npm view @orpc/server dist-tags`, or the package manager's equivalent) to see which tag carries 2.x, then install the same version of every `@orpc/*` package with the project's package manager. Do not assume v2 is still on the `beta` tag.
+
+Pretrained oRPC knowledge is often v1-shaped (routing moved to `.meta(openapi(...))`, `RPCLink` split `url` into `origin` plus a path, automatic middleware dedupe was removed). Prefer retrieval for any API you are not sure of: the index of every docs page is at https://orpc.dev/llms.txt; see [Full documentation](#full-documentation) for the mechanics.
+
+Fit the existing project. Examples below use Zod, the Fetch adapter, and a single codebase only for illustration. Keep the project's schema library, runtime adapter, integration packages, package layout, and code-first or contract-first style unless the task asks to change them.
 
 Package map:
 
@@ -214,13 +220,13 @@ const safeClient = createSafeClient(orpc) // every call returns [error, data]
 - Contract-first: define contracts with `@orpc/contract`, implement with `implement` (covered in depth by the `orpc-contract` skill): [Contracts](https://orpc.dev/docs/contract/procedure)
 - Plugins for handler and link: batch, CORS, dedupe, retry, compression, request limits, smart coercion, static files, timeout, tmp file upload, and more. Fetch a plugin's docs page before configuring it; option names are not guessable: [Plugins](https://orpc.dev/docs/plugins/batch)
 - Integrations: [TanStack Query](https://orpc.dev/docs/integrations/tanstack-query) (`createTanstackQueryUtils`), [SWR](https://orpc.dev/docs/integrations/swr), [Pinia Colada](https://orpc.dev/docs/integrations/pinia-colada), [Next.js](https://orpc.dev/docs/integrations/next), [NestJS](https://orpc.dev/docs/integrations/nest), [AI SDK](https://orpc.dev/docs/integrations/ai-sdk), [OpenTelemetry](https://orpc.dev/docs/integrations/opentelemetry)
-- Testing: `call` procedures directly; mock with `implement(router.planet.list).handler(() => [])`, and run the project's typecheck before declaring success, since end-to-end types are oRPC's first correctness signal: [Testing and Mocking](https://orpc.dev/docs/recipes/testing-and-mocking)
+- Testing: `call` procedures directly for handler, validation, and middleware logic; mock with `implement(router.planet.list).handler(() => [])`: [Testing and Mocking](https://orpc.dev/docs/recipes/testing-and-mocking). Verify with the project's existing typecheck and test commands. A direct `call` never touches the wire, so changes to serialization, error shapes, or auth context also deserve a test through the real handler and link (for example `RPCHandler` behind a fetch-based `RPCLink`, or the MSW integration).
 - Monorepos: TypeScript project references keep client types resolvable: [Monorepo Setup](https://orpc.dev/docs/recipes/monorepo-setup)
 - Migrating from tRPC or oRPC v1: use the `orpc-migrate` skill
 
 ## Full documentation
 
-This skill is an overview; fetch exact docs instead of guessing APIs, and if this skill and a fetched page disagree, trust the page. The docs are served at https://orpc.dev (the v1 docs stay at https://v1.orpc.dev):
+This skill is an overview; fetch exact docs instead of guessing APIs. The docs are served at https://orpc.dev (the v1 docs stay at https://v1.orpc.dev) and describe the latest release. Match retrieval to the installed or target version: for an older 2.x, especially a beta, read the same page from the release tag at https://github.com/middleapi/orpc/tree/v<version> (locate it under the docs content there, since the docs layout and the `.md`/`.mdx` extension vary across releases; the package source is also there) or the installed package's `.d.ts` files in `node_modules`. When this skill, a docs page, and the installed types disagree, the installed version's types and tagged docs win over the live page, and the live page wins over this skill.
 
 - https://orpc.dev/llms.txt : index of every page with descriptions
 - https://orpc.dev/llms-full.txt : the entire docs in one file (large; prefer single pages)

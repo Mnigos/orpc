@@ -1,12 +1,18 @@
 ---
 name: orpc-migrate
-description: "Migrate existing codebases to current oRPC, covering tRPC to oRPC (incremental wrapping via the @orpc/trpc integration or a full rewrite with the concept mapping) and oRPC v1 to v2 (package renames, breaking changes, and a safe order of operations). Use when asked to migrate from tRPC to oRPC, convert or wrap a tRPC router, upgrade oRPC v1 to v2, fix oRPC v2 breaking changes, or swap `@trpc/*` packages for `@orpc/*` equivalents. Biases toward retrieval from the oRPC docs over pre-trained knowledge. Not for greenfield oRPC work or new features in an already-migrated codebase: use the orpc skill for those."
+description: "Migrate a codebase to oRPC v2 when explicitly asked or when such a migration is already in progress: tRPC to oRPC (incremental wrapping or full rewrite) and oRPC v1 to v2 (renames, breaking changes, rollout). Not for greenfield work or v1 projects nobody asked to upgrade."
 license: MIT
 ---
 
 # Migrating to oRPC
 
-Playbook for two migrations: tRPC to oRPC, and oRPC v1 to v2. Work in small mechanical steps and run the project's typecheck and test suite after each one, so any failure points at the last step. Pretrained knowledge of oRPC describes v1 and is often wrong for v2: derive every import path, builder method, and option name from the docs pages listed at the end, never from memory. For core v2 concepts while rewriting (the `os` builder, routers, middleware, clients), load the `orpc` skill. v2 currently ships under the `beta` npm dist-tag and plain installs get v1; drop the `@beta` suffix once `npm view @orpc/server dist-tags` shows `latest` at 2.x.
+Playbook for two migrations: tRPC to oRPC, and oRPC v1 to v2. Work in small mechanical steps and run the project's existing typecheck and tests after each one, so any failure points at the last step. Pretrained knowledge of oRPC is often v1-shaped: derive every import path, builder method, and option name from the docs pages listed at the end, never from memory. For core v2 concepts while rewriting (the `os` builder, routers, middleware, clients), load the `orpc` skill.
+
+Scope the migration first:
+
+- **Source and target.** Read the exact installed versions, prerelease suffix included, from the lockfile or `node_modules/@orpc/*/package.json` (`@trpc/*` too for a tRPC migration), and use the target version the user asked for. If they did not name one, determine the current compatible 2.x from the registry at that moment (`npm view @orpc/server dist-tags` or the package manager's equivalent) rather than assuming v2 is still on the `beta` tag, and ask only when the choice is genuinely consequential. Docs install snippets say `@beta`; substitute the selected target.
+- **Package compatibility.** Every `@orpc/*` package moves to the same release, installed with the project's package manager (pnpm, npm, bun, yarn, deno), and integration packages must match the framework versions already installed (for example `@orpc/tanstack-query` against the project's TanStack Query major).
+- **Nothing else.** No unrelated dependency bumps, framework swaps, or architecture changes ride along with a migration.
 
 ## tRPC to oRPC
 
@@ -14,7 +20,7 @@ Two paths. Pick incremental when the app must keep shipping or the tRPC router i
 
 ### Incremental: wrap the existing tRPC router
 
-Install `@orpc/trpc@beta` and convert. The result is a regular oRPC router: expose it through an RPC or OpenAPI handler, or call it with a server-side client, while the tRPC code keeps working untouched.
+Install `@orpc/trpc` at the selected target version and convert. The result is a regular oRPC router: expose it through an RPC or OpenAPI handler, or call it with a server-side client, while the tRPC code keeps working untouched.
 
 ```ts
 import { toORPCRouter } from '@orpc/trpc'
@@ -39,11 +45,11 @@ Then rewrite leaf routers to native oRPC one at a time, mounting each next to th
 | Validation        | `.input(schema)` / `.output(schema)`           | same names                     |
 | Implementation    | `.query()` / `.mutation()` / `.subscription()` | `.handler()` for all three     |
 | Errors            | `new TRPCError({ code, ... })`                 | `new ORPCError(code, { ... })` |
-| Serializer        | `superjson` transformer                        | built in, remove `superjson`   |
+| Serializer        | `superjson` transformer                        | built in, no transformer       |
 
 Steps, in order, verifying after each:
 
-1. **Packages.** Remove `@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`; install `@orpc/server@beta`, `@orpc/client@beta`, `@orpc/tanstack-query@beta`.
+1. **Packages.** Install `@orpc/server`, `@orpc/client`, and `@orpc/tanstack-query` at the selected target version with the project's package manager. Remove `@trpc/server`, `@trpc/client`, `@trpc/tanstack-react-query`, and `superjson` only once their last import is gone; in an incremental migration, or when another part of the repo still uses them, they stay.
 2. **Base file.** Port the context factory unchanged, then rebuild the shared procedures. In handlers and middleware, `ctx` becomes `context`:
 
    ```ts
@@ -93,7 +99,7 @@ Steps, in order, verifying after each:
 
 Most v1 names still compile through deprecated aliases (strike-through hints, not errors), so migrate in passes. Order of operations:
 
-1. **Update packages.** Install every `@orpc/*` package from the `beta` dist-tag (`npm install @orpc/server@beta @orpc/client@beta`, and so on). Swap renamed ones first: `@orpc/react-query`/`@orpc/vue-query`/`@orpc/solid-query`/`@orpc/svelte-query` all became `@orpc/tanstack-query`; `@orpc/openapi-client` merged into `@orpc/openapi`; `@orpc/react` became `@orpc/next`; `@orpc/otel` became `@orpc/opentelemetry`; the `experimental-` packages were promoted (`@orpc/publisher`, `@orpc/ratelimit`, `@orpc/pino`, `@orpc/swr`); `@orpc/vue-colada` became `@orpc/pinia-colada`. Typecheck: the remaining errors are the hard breaks.
+1. **Update packages.** Move every `@orpc/*` package to the same selected 2.x target with the project's package manager (the docs' `@beta` snippets are placeholders for that version). Swap renamed ones first: `@orpc/react-query`/`@orpc/vue-query`/`@orpc/solid-query`/`@orpc/svelte-query` all became `@orpc/tanstack-query`; `@orpc/openapi-client` merged into `@orpc/openapi`; `@orpc/react` became `@orpc/next`; `@orpc/otel` became `@orpc/opentelemetry`; the `experimental-` packages were promoted (`@orpc/publisher`, `@orpc/ratelimit`, `@orpc/pino`, `@orpc/swr`); `@orpc/vue-colada` became `@orpc/pinia-colada`. Typecheck: the remaining errors are the hard breaks.
 2. **Fix the hard breaks** (no aliases):
    - Routing: `.route`, `.prefix`, `.tag`, `.$route` are gone from the builder. Use `.meta(openapi({ method, path, prefix, tags }))` from `@orpc/openapi`, or restore `.route` with `import '@orpc/openapi/extensions/route'`.
    - `.callable` and `.actionable`: use `call`/`createRouterClient` from `@orpc/server` and `createServerFunctionable` from `@orpc/next`, or the corresponding extension imports.
@@ -103,7 +109,7 @@ Most v1 names still compile through deprecated aliases (strike-through hints, no
    - Option renames, scoped: handler `rootInterceptors` to `routingInterceptors` (handler `clientInterceptors` still exists, unchanged); link `clientInterceptors` to `transportInterceptors`. Flat `eventIterator*` options moved under the adapter's request/response mapping: `toFetchResponse.eventStream` on the fetch handler, `sendStandardResponse.eventStream` on Node, `toFetchRequest.eventStream` on the link.
    - `adapterInterceptors` was removed from handlers and links, because regular interceptors can now customize body parsing behavior.
 3. **Audit silent behavior changes** (compile fine, behave differently):
-   - **Wire format changed:** a v1 link cannot talk to a v2 server, in either direction. Deploy the upgraded server and clients together.
+   - **Wire format changed:** a v1 link cannot talk to a v2 server, in either direction. When one deployment ships server and clients together, deploy them as one coordinated rollout. When clients deploy independently (mobile apps, third-party consumers, separately released frontends), keep the legacy endpoint exactly as deployed clients know it, same URL and same v1 protocol, since they often hardcode `/rpc`, and add the v2 handler at a new versioned URL (for example `/rpc/v2`) while those clients migrate; retire the legacy endpoint only once every client has moved. External OpenAPI consumers that expect the v1 error body can be kept working with a custom error response, see the from-v1 guide.
    - **Automatic middleware deduplication removed:** middleware applied at both router and procedure level now runs twice, with no warning. Guard shared middleware with the context-flag pattern from the dedupe-middleware recipe.
    - **Batch Plugin `exclude` became `filter` with the opposite meaning.** Usually delete `exclude`; if skipping is still needed, negate the predicate.
    - **`RPCHandler` rejects GET by default** (`allowMethods` defaults to POST/PUT/PATCH/DELETE). Simplest fix: stop sending GET from the link; only allow GET deliberately, with CSRF protection.
@@ -111,11 +117,11 @@ Most v1 names still compile through deprecated aliases (strike-through hints, no
    - **`.input`/`.output` now stack:** a repeated call adds a schema instead of replacing the previous one.
 4. **Sweep deprecated aliases** last: `eventIterator` to `asyncIteratorObject`, handler plugins gained a `HandlerPlugin` suffix and link plugins a `LinkPlugin` suffix, `ContractRouter*` types became `RouterContract*`. The from-v1 guide ends with the full alias cheat sheet.
 
-Verification: typecheck and unit tests after steps 1, 2, and 4; step 3 needs integration or e2e tests, since those changes never surface at compile time. Before finishing, grep for old package names and remaining deprecation strike-throughs.
+Verification: the project's existing typecheck and tests after steps 1, 2, and 4; step 3 needs tests that go through the real handler and link (`RPCHandler` behind `RPCLink`, or the existing integration/e2e suite), since a direct `call` never exercises the wire and those changes never surface at compile time. Before finishing, grep for old package names and remaining deprecation strike-throughs.
 
 ## Docs retrieval
 
-Fetch pages instead of recalling them, and if this skill and a fetched page disagree, trust the page. The v2 docs live at https://orpc.dev and the v1 docs at https://v1.orpc.dev; slugs look alike across both hosts, so check which host a page came from before copying anything from it. The index of every v2 docs page is at https://orpc.dev/llms.txt, https://orpc.dev/llms-full.txt bundles the entire docs in one large file, and appending `.md` to any page URL returns its exact source markdown.
+Fetch pages instead of recalling them, and if this skill and a fetched page disagree, trust the page. The v2 docs live at https://orpc.dev and the v1 docs at https://v1.orpc.dev; slugs look alike across both hosts, so check which host a page came from before copying anything from it. The live v2 docs describe the latest release: when the target is an older 2.x, especially a beta, read the same page from the release tag at https://github.com/middleapi/orpc/tree/v<version> (locate it under the docs content there, since the docs layout and the `.md`/`.mdx` extension vary across releases; the package source is also there) or the installed package's `.d.ts` files, and let those win over the live page. The index of every v2 docs page is at https://orpc.dev/llms.txt, https://orpc.dev/llms-full.txt bundles the entire docs in one large file, and appending `.md` to any page URL returns its exact source markdown.
 
 Authoritative pages to consult during the migration (this skill deliberately omits their full mapping tables):
 

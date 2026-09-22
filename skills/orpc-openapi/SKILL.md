@@ -1,14 +1,14 @@
 ---
 name: orpc-openapi
-description: "Expose an oRPC router as a spec-compliant OpenAPI HTTP API. Use when a project depends on @orpc/openapi, or for defining REST-style routes on oRPC procedures (openapi() metadata or .route with method, path, successStatus), serving them with OpenAPIHandler alongside RPCHandler, coercing query and path strings with Smart Coercion, calling an OpenAPI-shaped API with OpenAPILink, generating an OpenAPI 3.2 (or 3.1, 3.0) document with OpenAPIGenerator, or serving Scalar or Swagger docs with the OpenAPI Reference plugin. Biases toward retrieval from the oRPC docs over pre-trained knowledge. For contract-first work (defining contracts with oc, implementing them with implement, or generating a contract from an existing OpenAPI spec), use the orpc-contract skill; for plain RPC serving, core builder, middleware, or client work with no REST exposure, use the orpc skill instead."
+description: "Expose oRPC v2 procedures as a spec-compliant HTTP API: REST routing metadata, OpenAPIHandler, request coercion, OpenAPILink and restoring native response types, spec generation, and Scalar/Swagger docs. Use for that work, not merely because @orpc/openapi is installed; contract definition belongs to orpc-contract."
 license: MIT
 ---
 
 # oRPC over OpenAPI
 
-oRPC procedures speak two protocols from one router: the RPC protocol (`RPCHandler`/`RPCLink`) and plain OpenAPI HTTP (`OpenAPIHandler`/`OpenAPILink`). This skill covers the OpenAPI side. For core builder, middleware, context, and client concepts, load the `orpc` skill (it also carries the v2 install and version check); for contract-first workflows with `@orpc/contract`, load the `orpc-contract` skill.
+oRPC procedures speak two protocols from one router: the RPC protocol (`RPCHandler`/`RPCLink`) and plain OpenAPI HTTP (`OpenAPIHandler`/`OpenAPILink`). This skill covers the OpenAPI side. For core builder, middleware, context, and client concepts, load the `orpc` skill; for contract-first workflows with `@orpc/contract`, load the `orpc-contract` skill.
 
-This skill targets oRPC v2. Pretrained oRPC knowledge describes v1 and is often wrong for v2: when unsure of any API below, fetch its exact docs page first (see [Full documentation](#full-documentation)).
+This skill targets oRPC v2. Check the exact installed `@orpc/openapi` and `@orpc/server` versions yourself, prerelease suffix included, from the lockfile or `node_modules/@orpc/openapi/package.json` (or the project's package manager, such as `pnpm ls @orpc/openapi`), without loading the `orpc` skill just for that. A 1.x install means the v1 docs at https://v1.orpc.dev apply and this skill does not; upgrading is a separate, requested migration (`orpc-migrate` skill), never a side effect. If installing or upgrading is in scope, check the registry's dist-tags at that moment rather than assuming 2.x is still on `beta`, and use the project's package manager. Pretrained oRPC knowledge is often v1-shaped (`.route`/`.prefix` on the builder, `@orpc/openapi-client`): when unsure of any API below, fetch the docs page matching the installed version first (see [Full documentation](#full-documentation)). Zod and the Fetch adapter below are illustrative; keep the project's schema library, converter, runtime adapter, and code-first or contract-first style.
 
 ## Routing
 
@@ -75,13 +75,13 @@ export async function fetch(request: Request): Promise<Response> {
 
 `OpenAPIHandler` coexists with `RPCHandler`: both accept the same router, so mount them on different prefixes (for example `/api` and `/rpc`) and try each in turn, returning the first `matched` response.
 
-Smart Coercion: query, path, and form values arrive as strings, so add `SmartCoercionHandlerPlugin` whenever input schemas expect non-string types from those sources. It coerces schema-driven, lossless conversions only (`'123'` to `123`, `'true'`/`'on'` to `true`, ISO strings to `Date`, arrays to `Set`/`Map` via `x-native-type`) and leaves ambiguous values untouched. Skip it when you already coerce in the schema or performance is critical; it adds runtime overhead.
+Smart Coercion: query, path, and form values arrive as strings, so add `SmartCoercionHandlerPlugin` whenever input schemas expect non-string types from those sources. It coerces schema-driven, lossless conversions only (`'123'` to `123`, `'true'`/`'on'` to `true`, ISO strings to `Date`, arrays to `Set`/`Map` via `x-native-type`) and leaves ambiguous values untouched. Skip it when you already coerce in the schema or performance is critical; it adds runtime overhead. This is request-input coercion on the handler only: it never changes what the client receives back.
 
 Other handler options: `interceptors`/`routingInterceptors`/`clientInterceptors` for logging and error mapping, `filter` to exclude procedures from matching, and `errorStatusMap` plus `customErrorResponseBodyEncoder` to customize error responses (by default `ORPCError` codes map to statuses via `COMMON_ERROR_STATUS_MAP`, for example `NOT_FOUND` to 404).
 
 ## Calling: OpenAPILink
 
-`OpenAPILink` calls an OpenAPI-shaped oRPC API (or any spec-compliant server) through a typesafe client. It needs the contract or router type to know each procedure's route:
+`OpenAPILink` calls an OpenAPI-shaped oRPC API (or any spec-compliant server) through a typesafe client. Unlike `RPCLink`, it takes the contract (or an unlazied router) as a runtime value, not a type, to read each procedure's method and path:
 
 ```ts
 import type { RouterContractClient } from '@orpc/contract'
@@ -100,9 +100,16 @@ const link = new OpenAPILink(contract, {
 const client: JsonifiedClient<RouterContractClient<typeof contract>> = createORPCClient(link)
 ```
 
-With a router instead of a contract, type the client as `JsonifiedClient<RouterClient<typeof router>>` (`RouterClient` from `@orpc/server`). `JsonifiedClient` exists because OpenAPI serialization is one-way: a `Date` returns as a string. Add `SmartCoercionLinkPlugin` from `@orpc/json-schema` (same converters, first argument is the contract) to restore native types on responses, then drop the `JsonifiedClient` wrapper from the client type.
+With a router instead of a contract, type the client as `JsonifiedClient<RouterClient<typeof router>>` (`RouterClient` from `@orpc/server`). In a browser bundle the runtime value must come from a shared contract package, a minified JSON contract, or a build-time macro; never import the server's router implementation into client code. The minify flow is in the `orpc-contract` skill under "Ship the contract", the macro flow in `openapi/link-without-runtime-imports`.
 
-To ship a contract to clients without bundling server code, minify it to JSON and import it with a cast; the flow is in the `orpc-contract` skill under "Ship the contract".
+### Native types on responses
+
+`JsonifiedClient` exists because OpenAPI serialization is one-way: a `Date` leaves the server as an ISO string and stays a string on the client. Declaring `z.date()` in `.output`, or coercing on the handler side, changes nothing for the client, because output validation runs on the server before serialization. Keep `JsonifiedClient` unless the link itself re-parses responses, with one of two plugins:
+
+- `ResponseValidationLinkPlugin(contract)` from `@orpc/contract/plugins` runs the contract's `.output` (and error `data`) schemas on the client. With a coercing output schema (`z.coerce.date<Date>()`, `z.coerce.bigint<bigint>()`) it turns the JSON form back into the native type; the coercion rules stay explicit in the schema. It only works with schemas that accept the wire form: a transform whose output the schema cannot accept as input fails on the client, because the server already sent the transformed value. Docs: `plugins/response-validation`.
+- `SmartCoercionLinkPlugin(contract, { converters: [...] })` from `@orpc/json-schema` derives lossless conversions from the schemas' JSON Schema (`x-native-type`), so no coercion needs to be written into the schema. Docs: `plugins/smart-coercion`.
+
+Both read schemas from the contract you pass, so a minified JSON contract (`minifyRouterContract` strips schemas) cannot drive either; give the link the real contract with schemas or keep `JsonifiedClient`. Drop the `JsonifiedClient` wrapper only once the plugin and schemas actually restore every declared native shape the client relies on, output and error `data` fields included; the plugin's presence alone does not make the wrapper wrong. Handler-side Smart Coercion covers request input; link-side plugins cover responses; there is no blanket rule to use or avoid `z.coerce.date`, pick it per side and per schema. Both plugins can only restore types the OpenAPI serializer can represent: `openapi/expanding-type-support-for-link`.
 
 ## Spec document and interactive docs
 
@@ -131,7 +138,7 @@ const handler = new OpenAPIHandler(router, {
 
 Enrich the document through `openapi` metadata: `operationId`, `summary`, `description`, `tags`, `successDescription`, and a `spec` callback that receives the generated operation object and returns an extended one (security requirements, extra responses). Write `spec` and `base` as OpenAPI 3.2 objects even when generating 3.1 or 3.0; the generator downgrades the whole document. Converters also exist for Valibot (`@orpc/valibot`) and ArkType (`@orpc/arktype`); schemas without a matching converter fall back to Standard JSON Schema conversion.
 
-Verify the wiring before declaring success: request `/spec.json` under the handler prefix and one routed endpoint, and confirm the method, path, and status you configured.
+Verify the wiring before declaring success with the project's existing checks and a test through the real `OpenAPIHandler` (and `OpenAPILink`, if you touched the client side): request one routed endpoint, plus `/spec.json` under the handler prefix when the document matters, and confirm the method, path, status, and body shape you configured. A direct `call` of the procedure bypasses routing, input mapping, and serialization, so it proves nothing about the HTTP side.
 
 ## Contract-first
 
@@ -139,7 +146,7 @@ Contract-first workflows belong to the `orpc-contract` skill: defining the shape
 
 ## Full documentation
 
-If this skill and a fetched docs page disagree, trust the page: this skill is a summary and v2 is still moving. The docs are served at https://orpc.dev (the v1 docs stay at https://v1.orpc.dev):
+This skill is a summary and v2 is still moving. The docs are served at https://orpc.dev (the v1 docs stay at https://v1.orpc.dev) and describe the latest release. Match retrieval to the installed or target version: for an older 2.x, especially a beta, read the same page from the release tag at https://github.com/middleapi/orpc/tree/v<version> (locate it under the docs content there, since the docs layout and the `.md`/`.mdx` extension vary across releases; the package source is also there) or the installed package's `.d.ts` files in `node_modules`. The installed version's types and tagged docs win over the live page, and the live page wins over this skill.
 
 - https://orpc.dev/llms.txt : index of every page with descriptions
 - https://orpc.dev/llms-full.txt : the entire docs in one file (large; prefer single pages)
@@ -147,5 +154,5 @@ If this skill and a fetched docs page disagree, trust the page: this skill is a 
 
 Pages to fetch when you need details beyond this skill:
 
-- OpenAPI: `openapi/routing`, `openapi/input-and-output-mapping`, `openapi/bracket-notation`, `openapi/serializer`, `openapi/handler`, `openapi/link`, `openapi/specification`, `openapi/scalar`
-- Plugins: `plugins/smart-coercion`, `plugins/openapi-reference`
+- OpenAPI: `openapi/routing`, `openapi/input-and-output-mapping`, `openapi/bracket-notation`, `openapi/serializer`, `openapi/handler`, `openapi/link`, `openapi/expanding-type-support-for-link`, `openapi/link-without-runtime-imports`, `openapi/specification`, `openapi/scalar`
+- Plugins: `plugins/smart-coercion`, `plugins/response-validation`, `plugins/openapi-reference`
