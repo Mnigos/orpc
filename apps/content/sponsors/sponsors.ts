@@ -364,6 +364,15 @@ export default [
     "tierLevel": 1
   },
   {
+    "name": "Shotaro Nakamura",
+    "login": "nakasyou",
+    "avatar": "https://avatars.githubusercontent.com/u/79000684?u=f644df3f29f0e8677a90967115774564f1d9d6ab&v=4",
+    "link": "https://nakasyou.how/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Backer",
+    "tierLevel": 1
+  },
+  {
     "name": "Alex",
     "login": "piscis",
     "avatar": "https://avatars.githubusercontent.com/u/326163?u=b245f368bd940cf51d08c0b6bf55f8257f359437&v=4",
@@ -710,6 +719,15 @@ export default [
     "login": "Nic13Gamer",
     "avatar": "https://avatars.githubusercontent.com/u/54724556?u=56a7ab430ce7a80d648ab6eba051d454a818ed0b&v=4",
     "link": "https://github.com/Nic13Gamer?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Past Sponsor",
+    "tierLevel": 0
+  },
+  {
+    "name": "Laduni",
+    "login": "laduni",
+    "avatar": "https://images.opencollective.com/laduni/avatar/460.png",
+    "link": "https://opencollective.com/laduni?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
     "rel": "sponsored",
     "tierTitle": "Past Sponsor",
     "tierLevel": 0
