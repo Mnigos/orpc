@@ -31,15 +31,6 @@ export default [
     "tierLevel": 4
   },
   {
-    "name": "Nexa",
-    "login": "nexa-ca",
-    "avatar": "https://avatars.githubusercontent.com/u/199146462?v=4",
-    "link": "https://github.com/nexa-ca?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
-    "rel": "sponsored",
-    "tierTitle": "Premium Sponsor",
-    "tierLevel": 4
-  },
-  {
     "name": "LN Markets",
     "login": "ln-markets",
     "avatar": "https://avatars.githubusercontent.com/u/70597625?v=4",
@@ -719,6 +710,15 @@ export default [
     "login": "rauchg",
     "avatar": "https://avatars.githubusercontent.com/u/13041?u=1ee8d111657cdd02ff6d253df00978d17ee6d722&v=4",
     "link": "http://twitter.com/rauchg?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Past Sponsor",
+    "tierLevel": 0
+  },
+  {
+    "name": "Nexa",
+    "login": "nexa-ca",
+    "avatar": "https://avatars.githubusercontent.com/u/199146462?v=4",
+    "link": "https://github.com/nexa-ca?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
     "rel": "sponsored",
     "tierTitle": "Past Sponsor",
     "tierLevel": 0
