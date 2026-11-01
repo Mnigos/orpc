@@ -436,7 +436,7 @@ export default [
     "tierLevel": 0
   },
   {
-    "name": "shr.ink oü",
+    "name": "shr-ink",
     "login": "shr-ink",
     "avatar": "https://avatars.githubusercontent.com/u/139700438?v=4",
     "link": "https://github.com/shr-ink?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
