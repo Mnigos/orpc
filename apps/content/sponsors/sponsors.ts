@@ -283,15 +283,6 @@ export default [
     "tierLevel": 1
   },
   {
-    "name": "Sam",
-    "login": "SSam0419",
-    "avatar": "https://avatars.githubusercontent.com/u/102863520?u=3c89611f549d5070be232eb4532f690c8f2e7a65&v=4",
-    "link": "https://lee-sam.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
-    "rel": "sponsored",
-    "tierTitle": "Backer",
-    "tierLevel": 1
-  },
-  {
     "name": "Titoine",
     "login": "Titoine",
     "avatar": "https://avatars.githubusercontent.com/u/3514286?u=1bb1e86b0c99c8a1121372e56d51a177eea12191&v=4",
@@ -638,6 +629,15 @@ export default [
     "login": "laduniestu",
     "avatar": "https://avatars.githubusercontent.com/u/44757637?u=a2fc1ea8f7d827a96721176f79d30592d1c48059&v=4",
     "link": "https://dun.gg/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Past Sponsor",
+    "tierLevel": 0
+  },
+  {
+    "name": "Sam",
+    "login": "SSam0419",
+    "avatar": "https://avatars.githubusercontent.com/u/102863520?u=3c89611f549d5070be232eb4532f690c8f2e7a65&v=4",
+    "link": "https://lee-sam.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
     "rel": "sponsored",
     "tierTitle": "Past Sponsor",
     "tierLevel": 0
