@@ -40,6 +40,15 @@ export default [
     "tierLevel": 3
   },
   {
+    "name": "Ibrahim Saberi",
+    "login": "GeorgeIpsum",
+    "avatar": "https://avatars.githubusercontent.com/u/2670350?u=31c4db8dcf5d605c612676475543a228884fc74b&v=4",
+    "link": "https://ibrahimsaberi.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Organization Sponsor",
+    "tierLevel": 3
+  },
+  {
     "name": "Reece McDonald",
     "login": "hrmcdonald",
     "avatar": "https://avatars.githubusercontent.com/u/39349270?v=4",
@@ -160,7 +169,7 @@ export default [
     "name": "Ellis Driscoll",
     "login": "ellis-driscoll",
     "avatar": "https://avatars.githubusercontent.com/u/70685966?u=c5f95bc33b5991d9744abe00052542e4a2ed3cb9&v=4",
-    "link": "https://github.com/ellis-driscoll?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "link": "https://ellisdriscoll.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
     "rel": "sponsored",
     "tierTitle": "Sponsor",
     "tierLevel": 2
