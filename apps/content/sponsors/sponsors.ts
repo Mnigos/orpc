@@ -31,6 +31,15 @@ export default [
     "tierLevel": 4
   },
   {
+    "name": "plancraft",
+    "login": "plancraft",
+    "avatar": "https://avatars.githubusercontent.com/u/46482287?v=4",
+    "link": "https://plancraft.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
+    "rel": "sponsored",
+    "tierTitle": "Organization Sponsor",
+    "tierLevel": 3
+  },
+  {
     "name": "LN Markets",
     "login": "ln-markets",
     "avatar": "https://avatars.githubusercontent.com/u/70597625?v=4",
@@ -692,15 +701,6 @@ export default [
     "login": "ChromeGG",
     "avatar": "https://avatars.githubusercontent.com/u/39050595?u=a58ca6042a6950e94e6e92442db76ef584279bc0&v=4",
     "link": "https://tkaczyk.dev/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
-    "rel": "sponsored",
-    "tierTitle": "Past Sponsor",
-    "tierLevel": 0
-  },
-  {
-    "name": "plancraft",
-    "login": "plancraft",
-    "avatar": "https://avatars.githubusercontent.com/u/46482287?v=4",
-    "link": "https://plancraft.com/?ref=middleapi&utm_source=middleapi&utm_medium=sponsor",
     "rel": "sponsored",
     "tierTitle": "Past Sponsor",
     "tierLevel": 0
